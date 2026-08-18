@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pipeline-jobs"
+version = "0.1.0"
+description = "Find jobs, research them, write the application, and apply. Your LLM, your resume, your machine."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Alyan Anwar" }]
+keywords = ["jobs", "job-search", "automation", "ats", "resume", "llm"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+  "httpx>=0.24",
+  "pyyaml>=6.0",
+  "rich>=13.0",
+  "reportlab>=4.0",
+]
+
+[project.optional-dependencies]
+# Only needed for `pipeline apply` and browser-based research.
+browser = ["scrapling[fetchers]>=0.2.9"]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+pipeline = "pipeline.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/alyananwar/Pipeline"
+Issues = "https://github.com/alyananwar/Pipeline/issues"
+
+[tool.setuptools.packages.find]
+include = ["pipeline*"]
+
+[tool.setuptools.package-data]
+pipeline = ["templates/*.yml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

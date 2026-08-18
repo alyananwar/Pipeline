@@ -1,0 +1,97 @@
+# Pipeline profile: everything the tool knows about you.
+# Fill this in. Nothing here leaves your machine except what you send to the
+# LLM provider you configured in .env.
+
+candidate:
+  full_name: "Jordan Rivera"
+  email: "jordan.rivera@example.com"
+  phone: "+1-555-0100"
+  location: "Austin, TX"
+  linkedin: "linkedin.com/in/jordanrivera"
+  github: "github.com/jordanrivera"
+  portfolio_url: "https://jordanrivera.example.com"
+
+target_roles:
+  # What you actually want. The scraper filters on these, the scorer ranks on them.
+  primary:
+    - "Software Engineer Intern"
+    - "Backend Engineer Intern"
+  # Optional. Broader buckets, used for ranking rather than filtering.
+  archetypes:
+    - name: "Platform / Infrastructure Intern"
+      fit: "secondary"
+
+narrative:
+  headline: "CS student with backend internship experience and three shipped side projects"
+  exit_story: >
+    Second-year CS student who has shipped production Python and Go, run a
+    small team project end to end, and wants a backend or platform internship
+    where the code actually gets deployed.
+  superpowers:
+    - "Ships end to end: design, build, deploy, monitor"
+    - "Comfortable in Python, Go, and SQL under real load"
+  proof_points:
+    - name: "OrderFlow"
+      hero_metric: "Handles 40k events/day, 99.9% uptime over 8 months"
+    - name: "campus-transit"
+      hero_metric: "Open source, 300+ stars, 12 contributors"
+
+preferences:
+  # Jobs scoring below this are never written up. Raise it to apply less, lower to apply more.
+  min_score_to_generate: 70
+  work_authorization: "US citizen"
+  requires_sponsorship: false
+  # Point this at your own PDF to skip the built-in resume builder entirely.
+  baseline_resume: ""
+
+# Boards to scan. Find the slug in the careers URL:
+#   boards.greenhouse.io/SLUG   jobs.lever.co/SLUG   jobs.ashbyhq.com/SLUG
+sources:
+  - source: greenhouse
+    board: anthropic
+  - source: lever
+    board: spotify
+  - source: ashby
+    board: ramp
+
+# Everything below is only used by the built-in resume builder.
+# Skip it if preferences.baseline_resume is set.
+experience:
+  - title: "Software Engineering Intern"
+    company: "Northwind Systems"
+    location: "Austin, TX"
+    dates: "Jun 2026 – Aug 2026"
+    bullets:
+      - "Built a Go service that replaced a nightly batch job, cutting data lag from 12 hours to 4 minutes."
+      - "Added integration tests to the billing path, catching two rounding bugs before release."
+  - title: "IT Support Assistant"
+    company: "University Help Desk"
+    location: "Austin, TX"
+    dates: "Sep 2025 – May 2026"
+    bullets:
+      - "Resolved ~30 tickets/week across Windows, macOS, and campus VPN."
+
+projects:
+  - name: "OrderFlow"
+    tech: "Python, Postgres, Redis"
+    link: "github.com/jordanrivera/orderflow"
+    bullets:
+      - "Event pipeline handling 40k events/day with idempotent retries and a dead-letter queue."
+  - name: "campus-transit"
+    tech: "Go, SQLite"
+    link: "github.com/jordanrivera/campus-transit"
+    bullets:
+      - "Real-time campus shuttle tracker; 300+ GitHub stars and 12 outside contributors."
+
+skills:
+  languages: ["Python", "Go", "SQL", "TypeScript"]
+  infrastructure: ["Docker", "PostgreSQL", "Redis", "Linux", "GitHub Actions"]
+  practices: ["Testing", "CI/CD", "Code review", "On-call basics"]
+
+education:
+  - degree: "B.S. Computer Science"
+    school: "University of Texas at Austin"
+    location: "Austin, TX"
+    dates: "Expected May 2028"
+    bullets:
+      - "Coursework: Data Structures, Operating Systems, Databases, Computer Networks"
