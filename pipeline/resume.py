@@ -29,36 +29,63 @@ logger = logging.getLogger(__name__)
 # Tuned so a normal amount of content lands on exactly one page. If a resume
 # overflows, the fix is cutting content, not shrinking type below 9pt.
 BODY_SIZE = 9.5
+MIN_BODY_SIZE = 9.0
 NAME_SIZE = 19
 SECTION_SIZE = 10.5
 MARGIN = 0.5 * inch
 
+# One tightening pass before giving up. Enough to absorb a resume that runs a few
+# lines long, not enough to pretend a three-page career fits on one page.
+RETRY_SCALE = 0.92
 
-def _styles() -> Dict[str, ParagraphStyle]:
+
+class ResumeOverflow(RuntimeError):
+    """The resume did not fit on one page even after tightening."""
+
+    def __init__(self, path: Path, pages: int) -> None:
+        super().__init__(
+            "Resume came out {0} pages. Trim the longest sections in profile.yml "
+            "(fewer bullets, or drop the oldest entry) and run generate again.".format(pages)
+        )
+        self.path = path
+        self.pages = pages
+
+
+def _styles(scale: float = 1.0) -> Dict[str, ParagraphStyle]:
+    """Body styles. `scale` tightens type and spacing for the second-pass retry.
+
+    Never called with a scale that drops body text below MIN_BODY_SIZE. Below
+    that a resume stops being comfortably readable, and the honest fix is cutting
+    content rather than hiding it in 8pt type.
+    """
+    body_size = max(MIN_BODY_SIZE, BODY_SIZE * scale)
+    section_size = max(MIN_BODY_SIZE + 0.5, SECTION_SIZE * scale)
+    name_size = max(15.0, NAME_SIZE * scale)
     base = ParagraphStyle(
         "body",
         fontName="Helvetica",
-        fontSize=BODY_SIZE,
-        leading=BODY_SIZE * 1.28,
+        fontSize=body_size,
+        leading=body_size * (1.28 if scale >= 1.0 else 1.18),
         alignment=TA_LEFT,
-        spaceAfter=1.5,
+        spaceAfter=1.5 * scale,
     )
     return {
         "body": base,
         "name": ParagraphStyle(
-            "name", parent=base, fontName="Helvetica-Bold", fontSize=NAME_SIZE,
-            leading=NAME_SIZE * 1.1, spaceAfter=3,
+            "name", parent=base, fontName="Helvetica-Bold", fontSize=name_size,
+            leading=name_size * 1.1, spaceAfter=3 * scale,
         ),
         "contact": ParagraphStyle(
-            "contact", parent=base, fontSize=BODY_SIZE - 0.5, textColor="#333333", spaceAfter=8,
+            "contact", parent=base, fontSize=body_size - 0.5, textColor="#333333",
+            spaceAfter=8 * scale,
         ),
         "section": ParagraphStyle(
-            "section", parent=base, fontName="Helvetica-Bold", fontSize=SECTION_SIZE,
-            spaceBefore=8, spaceAfter=2,
+            "section", parent=base, fontName="Helvetica-Bold", fontSize=section_size,
+            spaceBefore=8 * scale, spaceAfter=2 * scale,
         ),
         "role": ParagraphStyle("role", parent=base, fontName="Helvetica-Bold", spaceAfter=0.5),
         "bullet": ParagraphStyle(
-            "bullet", parent=base, leftIndent=10, bulletIndent=2, spaceAfter=1,
+            "bullet", parent=base, leftIndent=10, bulletIndent=2, spaceAfter=1 * scale,
         ),
     }
 
@@ -119,14 +146,47 @@ def render_resume(
     profile: Profile,
     output_path: Path,
     highlight: Optional[Sequence[str]] = None,
+    strict: bool = False,
 ) -> Path:
     """Write a one-page resume PDF and return its path.
 
     `highlight` reorders skills so the ones a specific posting asked for appear
     first. Nothing is invented: only skills already in the profile are used.
+
+    One page is a promise the README makes, so it is checked rather than assumed.
+    A resume that runs long gets one tightening pass; if it still spills, that is
+    a content problem the candidate has to decide about. With `strict` the
+    overflow raises, otherwise it is logged and the two-page file is returned so
+    an unattended run still has something to attach.
     """
+    _build_once(profile, output_path, highlight, scale=1.0)
+    pages = page_count(output_path)
+    if pages <= 1:
+        return output_path
+
+    logger.info("Resume ran to %d pages, retrying tighter.", pages)
+    _build_once(profile, output_path, highlight, scale=RETRY_SCALE)
+    pages = page_count(output_path)
+    if pages <= 1:
+        return output_path
+
+    if strict:
+        raise ResumeOverflow(output_path, pages)
+    logger.warning(
+        "Resume for %s is %d pages. Trim profile.yml to get it onto one.",
+        profile.name, pages,
+    )
+    return output_path
+
+
+def _build_once(
+    profile: Profile,
+    output_path: Path,
+    highlight: Optional[Sequence[str]],
+    scale: float,
+) -> Path:
     raw = profile.raw
-    styles = _styles()
+    styles = _styles(scale)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     doc = SimpleDocTemplate(

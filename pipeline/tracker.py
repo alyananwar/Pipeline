@@ -13,6 +13,7 @@ from dataclasses import dataclass, replace
 from typing import Dict, List, Optional
 
 from rich.console import Console, Group
+from rich.markup import escape
 from rich.live import Live
 from rich.panel import Panel
 from rich.spinner import Spinner
@@ -88,9 +89,10 @@ class Tracker:
     # -- updates --------------------------------------------------------------
 
     def activity(self, text: str) -> None:
+        # Stored raw: it is rendered through Text(), which does not parse markup.
         self._activity = text
         if self.quiet:
-            self.console.print("[dim]{0}[/dim]".format(text))
+            self.console.print(text, style="dim", markup=False, highlight=False)
         self._refresh()
 
     def track(self, external_id: str, company: str, title: str, source: str) -> None:
@@ -164,12 +166,15 @@ class Tracker:
             if row is None:
                 continue
             icon = STATUS_ICON.get(row.stage, "")
+            # Job titles and companies come off third-party boards. A title
+            # containing something that reads as a closing tag ("[/x]") raises
+            # MarkupError and would take down an otherwise fine long run.
             table.add_row(
-                row.title,
-                row.company,
+                escape(row.title),
+                escape(row.company),
                 Text(row.source, style="dim"),
                 Text(row.stage, style=STAGE_STYLE.get(row.stage, "")),
-                "{0} {1}".format(icon, row.status).strip(),
+                "{0} {1}".format(icon, row.status).strip(),  # status is ours, markup intended
             )
 
         self._spinner.text = Text(" {0}".format(self._activity), style="dim")
@@ -222,7 +227,7 @@ def print_blocked(console: Console, items: List[BlockedItem]) -> None:
 
     for index, item in enumerate(items, start=1):
         table.add_row(
-            str(index), item.company, item.title,
+            str(index), escape(item.company), escape(item.title),
             item.barrier.value.replace("_", " "), item.help_text,
         )
     console.print(table)

@@ -45,13 +45,24 @@ class LLMConfig:
 
 @dataclass(frozen=True)
 class Settings:
-    llm: LLMConfig
+    # None until an LLM is actually needed. `pipeline scrape`, `status`, and
+    # `unblock` never call a model, and demanding an API key from someone who
+    # only wants to see whether the tool finds real jobs is the fastest way to
+    # lose them before they ever see it work.
+    llm: Optional[LLMConfig]
+    llm_error: Optional[str]
     db_path: Path
     profile_path: Path
     search_api_key: Optional[str] = None
     search_provider: Optional[str] = None
     browser_enabled: bool = False
     linkedin_enabled: bool = False
+
+    def require_llm(self) -> LLMConfig:
+        """The LLM config, or the configuration error that stopped it loading."""
+        if self.llm is None:
+            raise ConfigError(self.llm_error or "No LLM configured.")
+        return self.llm
 
 
 def load_dotenv(path: Path = Path(".env")) -> None:
@@ -117,8 +128,16 @@ def load_settings(profile_path: Optional[Path] = None) -> Settings:
     elif os.environ.get("SERPER_API_KEY", "").strip():
         search_provider = "serper"
 
+    llm: Optional[LLMConfig] = None
+    llm_error: Optional[str] = None
+    try:
+        llm = _resolve_llm()
+    except ConfigError as exc:
+        llm_error = str(exc)
+
     return Settings(
-        llm=_resolve_llm(),
+        llm=llm,
+        llm_error=llm_error,
         db_path=Path(os.environ.get("PIPELINE_DB", str(DEFAULT_DB_PATH))),
         profile_path=profile_path or DEFAULT_PROFILE_PATH,
         search_api_key=search_key,
