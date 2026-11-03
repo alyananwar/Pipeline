@@ -1,5 +1,9 @@
 # Pipeline
 
+<p align="center">
+  <img src="docs/demo.gif" alt="Pipeline demo: init, then a real scrape of 932 postings across three job boards" width="800">
+</p>
+
 Pipeline finds job postings you actually qualify for, researches the company, writes your cover letter and screening answers, tailors your resume, then opens a browser and fills the application form. It stops and asks you before submitting anything.
 
 It runs on your computer. Your resume and your answers stay there.
