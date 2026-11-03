@@ -1,5 +1,7 @@
 # Pipeline
 
+**Find jobs you qualify for, write the application, and fill out the form. It asks you before it submits anything.**
+
 <p align="center">
   <img src="docs/demo.gif" alt="Pipeline demo: init, then a real scrape of 932 postings across three job boards" width="800">
 </p>
